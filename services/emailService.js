@@ -1,21 +1,11 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-const isEmailConfigured = Boolean(
-  process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS
-);
+const isEmailConfigured = Boolean(process.env.RESEND_API_KEY);
 
-let transporter = null;
+let resend = null;
 if (isEmailConfigured) {
-  transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: Number(process.env.EMAIL_PORT) || 587,
-    secure: Number(process.env.EMAIL_PORT) === 465, // true for 465
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-  console.log("✅ Email (Nodemailer) configured");
+  resend = new Resend(process.env.RESEND_API_KEY);
+  console.log("✅ Email (Resend) configured");
 } else {
   console.log(
     "ℹ️  Email not configured — password reset tokens will be logged to console"
@@ -36,13 +26,21 @@ async function sendEmail({ to, subject, html, text }) {
     return { fallback: true };
   }
 
-  return transporter.sendMail({
-    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+  const { data, error } = await resend.emails.send({
+    // Resend's free/testing sender — works without verifying your own domain
+    from: process.env.EMAIL_FROM || "TripInsider <onboarding@resend.dev>",
     to,
     subject,
     text,
     html,
   });
+
+  if (error) {
+    console.error("❌ Resend error:", error);
+    throw new Error(error.message || "Email could not be sent");
+  }
+
+  return data;
 }
 
 module.exports = { sendEmail, isEmailConfigured };
