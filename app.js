@@ -82,6 +82,15 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+
+// Static files serve karne ke liye
+app.use(express.static(path.join(__dirname, "public")));
+
+// Reset password link is page ko serve karega
+app.get("/reset-password/:token", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "reset-password.html"));
+});
+
 // 🚨 DEBUG: Trip routes check (IMPORTANT FIX)
 app.use("/api/trips", (req, res, next) => {
   console.log("🔥 Trip API HIT:", req.method, req.url);
